@@ -6,7 +6,7 @@ import _find from 'lodash/find'
 
 const commands = [SetChannel, Help]
 
-export default async function Init(client: Client) {
+export default async function Init(bot: Client) {
   // TODO:
   // const commands = includeAll({
   //   dirname: './commands/*',
@@ -15,12 +15,14 @@ export default async function Init(client: Client) {
   //   optional: true,
   // })
 
-  const guilds = await client.guilds.fetch()
-  for (const guild of client.guilds.cache.values()) {
+  const guilds = bot.guilds.cache.values()
+  console.log(`Registering commands in  guilds...`)
+
+  for (const guild of guilds) {
     await RegisterCommandsInAGuild(guild)
   }
 
-  client.on('interactionCreate', async interaction => {
+  bot.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return
 
     try {
@@ -32,15 +34,19 @@ export default async function Init(client: Client) {
       await interaction.reply(`Something went wrong. Please contact our support.`)
     }
   })
+
+  console.log('Commands registered.')
 }
 
-export function RegisterCommandsInAGuild(guild: Guild) {
+export async function RegisterCommandsInAGuild(guild: Guild) {
   for (const command of commands) {
     if (!command.name && !command.fn) continue
-    guild.commands?.create({
-      name: command.name,
-      description: command.description,
-      options: (command as any).options || null,
-    })
+    await guild.commands
+      ?.create({
+        name: command.name,
+        description: command.description,
+        options: (command as any).options || null,
+      })
+      .catch(err => console.error('Error registering command', command.name, err))
   }
 }
